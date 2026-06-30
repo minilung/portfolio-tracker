@@ -4,19 +4,27 @@ on:
   push:
     branches: ["main"]
 
+permissions:
+  contents: write # 確保有寫入權限
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-      - run: npm install
-      - run: npm run build
+          node-version: '24' # 配合 GitHub 最新環境
+      
+      - name: Install and Build
+        run: |
+          npm install
+          npm run build
+          
       - name: Deploy
-        uses: peaceiris/actions-gh-pages@v3
+        uses: peaceiris/actions-gh-pages@v4 # 建議升級到 v4 版本
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dist
