@@ -1,4 +1,5 @@
 // src/types.ts
+
 export type Market = 'US' | 'HK';
 
 export interface Holding {
@@ -14,13 +15,17 @@ export interface StockQuote {
   symbol: string;
   price: number;
   currency: string;
-  change: number;
-  changePercent: number;
-  updatedAt: string;
+  change?: number;          // 加上 ? 變成可選
+  changePercent?: number;   // 加上 ? 變成可選
+  updatedAt?: string;       // 加上 ? 變成可選
 }
 
 export interface HoldingWithQuote extends Holding {
-  quote?: StockQuote;
+  quote?: {
+    symbol: string;
+    price: number;
+    currency: string;
+  };
   costBasis: number;
   marketValue: number;
   profitLoss: number;
@@ -35,5 +40,11 @@ export interface PortfolioSummary {
 }
 
 export interface QuoteMap {
-  [symbol: string]: StockQuote;
+  [symbol: string]: {
+    symbol: string;
+    price: number;
+    currency: string;
+  };
+
+  
 }

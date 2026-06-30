@@ -1,11 +1,7 @@
 import { useCallback, useState } from 'react'
 import type { Market, QuoteMap } from '../types'
 
-interface YahooQuote {
-  symbol: string
-  regularMarketPrice: number
-  currency: string
-}
+
 
 export function useStockPrices(symbolList: { symbol: string; market: Market }[]) {
   const [quotes, setQuotes] = useState<QuoteMap>({})
@@ -35,7 +31,7 @@ export function useStockPrices(symbolList: { symbol: string; market: Market }[])
       if (!data.quoteResponse?.result) throw new Error('資料格式錯誤')
 
       const newQuotes: QuoteMap = {}
-      data.quoteResponse.result.forEach((q: YahooQuote) => {
+      data.quoteResponse.result.forEach((q: any) => {
         newQuotes[q.symbol] = {
           symbol: q.symbol,
           price: q.regularMarketPrice,
