@@ -20,9 +20,10 @@ export function useStockPrices(symbolList: { symbol: string; market: Market }[])
       const isProd = import.meta.env.PROD
       const yahooBaseUrl = 'https://query1.finance.yahoo.com/v8/finance/quote?symbols='
       
-      const url = isProd 
-        ? `https://corsproxy.io/?${encodeURIComponent(yahooBaseUrl + symbols)}`
-        : `/api/yahoo/v8/finance/quote?symbols=${symbols}`
+   // 修改生產環境的 URL 生成邏輯
+const url = isProd 
+? `https://api.allorigins.win/raw?url=${encodeURIComponent(yahooBaseUrl + symbols)}`
+: `/api/yahoo/v8/finance/quote?symbols=${symbols}`
 
       const response = await fetch(url)
       if (!response.ok) throw new Error('無法取得股價')
