@@ -1,54 +1,64 @@
-import { useCallback, useState } from 'react'
-import type { Market, QuoteMap } from '../types'
+import { useState, useMemo, useCallback } from 'react'
+import { useStockPrices } from './useStockPrices'
+import { loadHoldings, saveHoldings } from '../utils/storage'
+import type { Holding, HoldingWithQuote, PortfolioSummary } from '../types'
 
-export function useStockPrices(symbolList: { symbol: string; market: Market }[]) {
-  const [quotes, setQuotes] = useState<QuoteMap>({})
-  const [loading, setLoading] = useState(false)
-  const [lastUpdated, setLastUpdated] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
+export function usePortfolio() {
+  const [holdings, setHoldings] = useState<Holding[]>(() => loadHoldings())
 
-  const refresh = useCallback(async () => {
-    if (symbolList.length === 0) return
+  const symbolList = useMemo(() => 
+    holdings.map(h => ({ symbol: h.symbol, market: h.market })), 
+  [holdings])
 
-    setLoading(true)
-    setError(null)
+  const { quotes, loading, lastUpdated, error, refresh } = useStockPrices(symbolList)
 
-    try {
-      const symbols = symbolList.map((s) => s.symbol).join(',')
+  const holdingsWithQuotes: HoldingWithQuote[] = useMemo(() => {
+    return holdings.map(h => {
+      const quote = quotes[h.symbol]
+      const costBasis = h.buyPrice * h.quantity
+      const marketValue = quote ? quote.price * h.quantity : 0
+      const profitLoss = quote ? marketValue - costBasis : 0
+      const profitLossPercent = costBasis > 0 ? (profitLoss / costBasis) * 100 : 0
       
-      // 【關鍵修改】：偵測是否為生產環境 (GitHub Pages)
-      // import.meta.env.PROD 在 build 後會變成 true
-      const isProd = import.meta.env.PROD
-      const yahooBaseUrl = 'https://query1.finance.yahoo.com/v8/finance/quote?symbols='
-      
-      // 生產環境使用 CORS Proxy，開發環境使用本地 proxy
-      const url = isProd 
-        ? `https://corsproxy.io/?${encodeURIComponent(yahooBaseUrl + symbols)}`
-        : `/api/yahoo/v8/finance/quote?symbols=${symbols}`
+      return {
+        ...h,
+        quote: quote ? { symbol: quote.symbol, price: quote.price, currency: quote.currency } : undefined,
+        costBasis,
+        marketValue,
+        profitLoss,
+        profitLossPercent
+      }
+    })
+  }, [holdings, quotes])
 
-      const response = await fetch(url)
-      
-      if (!response.ok) throw new Error('無法取得股價')
-      
-      const data = await response.json()
-      
-      const newQuotes: QuoteMap = {}
-      data.quoteResponse.result.forEach((q: any) => {
-        newQuotes[q.symbol] = {
-          symbol: q.symbol,
-          price: q.regularMarketPrice,
-          currency: q.currency,
-        }
-      })
+  const summary: PortfolioSummary = useMemo(() => {
+    const totalCost = holdingsWithQuotes.reduce((sum, h) => sum + h.costBasis, 0)
+    const totalValue = holdingsWithQuotes.reduce((sum, h) => sum + h.marketValue, 0)
+    const totalProfitLoss = totalValue - totalCost
+    const totalProfitLossPercent = totalCost > 0 ? (totalProfitLoss / totalCost) * 100 : 0
+    return { totalCost, totalValue, totalProfitLoss, totalProfitLossPercent }
+  }, [holdingsWithQuotes])
 
-      setQuotes(newQuotes)
-      setLastUpdated(new Date().toISOString())
-    } catch (err) {
-      setError('無法取得股價，請檢查股票代碼或網絡連線')
-    } finally {
-      setLoading(false)
-    }
-  }, [symbolList])
+  const addHolding = useCallback((holding: Holding) => {
+    const next = [...holdings, holding]
+    setHoldings(next)
+    saveHoldings(next)
+  }, [holdings])
 
-  return { quotes, loading, lastUpdated, error, refresh }
+  const removeHolding = useCallback((id: string) => {
+    const next = holdings.filter(h => h.id !== id)
+    setHoldings(next)
+    saveHoldings(next)
+  }, [holdings])
+
+  return {
+    holdings: holdingsWithQuotes,
+    summary,
+    loading,
+    lastUpdated,
+    error,
+    refresh,
+    addHolding,
+    removeHolding
+  }
 }
