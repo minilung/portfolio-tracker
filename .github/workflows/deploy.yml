@@ -5,7 +5,9 @@ on:
     branches: ["main"]
 
 permissions:
-  contents: write # 確保有寫入權限
+  contents: read
+  pages: write      # 官方推薦：需要 pages 寫入權限
+  id-token: write   # 官方推薦：需要 id-token 權限
 
 jobs:
   build:
@@ -16,15 +18,21 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '24' # 配合 GitHub 最新環境
+          node-version: '24'
       
       - name: Install and Build
         run: |
           npm install
           npm run build
           
-      - name: Deploy
-        uses: peaceiris/actions-gh-pages@v4 # 建議升級到 v4 版本
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+        
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
+          path: './dist'
+          
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
