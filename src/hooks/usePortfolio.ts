@@ -1,14 +1,15 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useStockPrices } from './useStockPrices'
 import { loadHoldings, saveHoldings } from '../utils/storage'
-import type { Holding, HoldingWithQuote, PortfolioSummary, Market } from '../types'
+// 移除這裡的 Market，因為它在下面的介面定義中未被直接調用
+import type { Holding, HoldingWithQuote, PortfolioSummary } from '../types'
 
 // 務必在 AddHoldingInput 前面加上 export
 export interface AddHoldingInput {
   symbol: string;
   buyPrice: number;
   quantity: number;
-  market: 'US' | 'HK';
+  market: 'US' | 'HK'; // 這裡直接使用字面量型別，不需要額外引入 Market
 }
 
 export function usePortfolio() {
@@ -21,7 +22,7 @@ export function usePortfolio() {
   // 接收 quotes 供後續計算使用
   const { quotes, loading, lastUpdated, error, refresh } = useStockPrices(symbolList)
 
-  // 定義 holdingsWithQuotes (修復了找不到變數的問題)
+  // 定義 holdingsWithQuotes
   const holdingsWithQuotes: HoldingWithQuote[] = useMemo(() => {
     return holdings.map(h => {
       const quote = quotes[h.symbol]
@@ -41,7 +42,7 @@ export function usePortfolio() {
     })
   }, [holdings, quotes])
 
-  // 定義 summary (修復了 Property 'summary' missing initializer 的問題)
+  // 定義 summary
   const summary: PortfolioSummary = useMemo(() => {
     const totalCost = holdingsWithQuotes.reduce((sum, h) => sum + h.costBasis, 0)
     const totalValue = holdingsWithQuotes.reduce((sum, h) => sum + h.marketValue, 0)
