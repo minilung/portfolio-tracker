@@ -3,11 +3,12 @@ import { useStockPrices } from './useStockPrices'
 import { loadHoldings, saveHoldings } from '../utils/storage'
 import type { Holding, HoldingWithQuote, PortfolioSummary, Market } from '../types'
 
+// 務必在 AddHoldingInput 前面加上 export
 export interface AddHoldingInput {
-  symbol: string
-  buyPrice: number
-  quantity: number
-  market: Market
+  symbol: string;
+  buyPrice: number;
+  quantity: number;
+  market: 'US' | 'HK';
 }
 
 export function usePortfolio() {
